@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: pokedex
+
+  # Server configuration
+  server:
+    port: 8080
+
+# Logging
+logging:
+  level:
+    root: INFO
+    com.homechallenge: DEBUG
+

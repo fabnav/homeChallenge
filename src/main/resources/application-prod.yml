@@ -1,0 +1,4 @@
+# Production profile
+logging:
+  level:
+    com.homechallenge: INFO
