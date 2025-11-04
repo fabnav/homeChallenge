@@ -1,13 +1,14 @@
 package com.homechallenge.pokedex.helper;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.when;
 
 import java.util.Map;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
 
 /**
@@ -18,29 +19,61 @@ import org.springframework.web.client.RestClient;
 public class HttpRequestHelper {
     
     private final RestClient restClient;
-    private final RestClient.RequestHeadersUriSpec<?> requestHeadersUriSpec;
-    private final RestClient.ResponseSpec responseSpec;
+    private final RestClient.RequestHeadersUriSpec<?> getSpec;
+    private final RestClient.ResponseSpec getResponseSpec;
+    
+    private final RestClient.RequestBodyUriSpec postUriSpec;
+    private final RestClient.RequestBodySpec postBodySpec; // nuovo
+    private final RestClient.ResponseSpec postResponseSpec;
     
     public HttpRequestHelper(RestClient restClient,
-                            RestClient.RequestHeadersUriSpec<?> requestHeadersUriSpec,
-                            RestClient.ResponseSpec responseSpec) {
+                             RestClient.RequestHeadersUriSpec<?> getSpec,
+                             RestClient.ResponseSpec getResponseSpec) {
         this.restClient = restClient;
-        this.requestHeadersUriSpec = requestHeadersUriSpec;
-        this.responseSpec = responseSpec;
+        this.getSpec = getSpec;
+        this.getResponseSpec = getResponseSpec;
+        this.postUriSpec = null;
+        this.postBodySpec = null;
+        this.postResponseSpec = null;
     }
     
-    /**
-     * Mocks a GET request to the specified URI with the given response (Map type)
-     *
-     * @param uri The URI pattern (e.g., "/pokemon-species/{name}")
-     * @param uriVariable The variable to replace in the URI pattern
-     * @param response The response to return as Map
-     */
-    public void mockGetRequestMap(String uri, String uriVariable, Map<String, Object> response) {
-        doReturn(requestHeadersUriSpec).when(restClient).get();
-        doReturn(requestHeadersUriSpec).when(requestHeadersUriSpec).uri(eq(uri), eq(uriVariable));
-        when(requestHeadersUriSpec.retrieve()).thenReturn(responseSpec);
-        when(responseSpec.body(eq(Map.class))).thenReturn(response);
+    public HttpRequestHelper(RestClient restClient,
+                             RestClient.RequestBodyUriSpec postUriSpec,
+                             RestClient.RequestBodySpec postBodySpec,
+                             RestClient.ResponseSpec postResponseSpec) {
+        this.restClient = restClient;
+        this.postUriSpec = postUriSpec;
+        this.postBodySpec = postBodySpec;
+        this.postResponseSpec = postResponseSpec;
+        this.getSpec = null;
+        this.getResponseSpec = null;
+    }
+    
+    public void mockGetRequestMap(String uriTemplate, Object uriVar, Map<String, Object> response) {
+        doReturn(getSpec).when(restClient).get();
+        doReturn(getSpec).when(getSpec).uri(eq(uriTemplate), eq(uriVar));
+        doReturn(getResponseSpec).when(getSpec).retrieve();
+        doReturn(response).when(getResponseSpec).body(eq(Map.class));
+    }
+    
+    public void mockPostRequestMap(String uriTemplate, String pathVar, Map<String, Object> response) {
+        doReturn(postUriSpec).when(restClient).post();
+        doReturn(postBodySpec).when(postUriSpec).uri(eq(uriTemplate), eq(pathVar));
+        doReturn(postBodySpec).when(postBodySpec).body(any(MultiValueMap.class));
+        doReturn(postResponseSpec).when(postBodySpec).retrieve();
+        doReturn(response).when(postResponseSpec).body(eq(Map.class));
+    }
+    
+    public static HttpRequestHelper forGet(RestClient c,
+                                           RestClient.RequestHeadersUriSpec<?> s,
+                                           RestClient.ResponseSpec r) {
+        return new HttpRequestHelper(c, s, r);
+    }
+    
+    public static HttpRequestHelper forPost(RestClient c,
+                                            RestClient.RequestBodyUriSpec uriSpec,
+                                            RestClient.RequestBodySpec bodySpec,
+                                            RestClient.ResponseSpec r) {
+        return new HttpRequestHelper(c, uriSpec, bodySpec, r);
     }
 }
-

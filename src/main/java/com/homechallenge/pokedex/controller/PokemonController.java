@@ -24,5 +24,12 @@ public class PokemonController {
         PokemonDTO pokemon = pokemonService.getPokemonByName(name);
         return ResponseEntity.ok(pokemon);
     }
+    
+    @GetMapping("/translated/{name}")
+    public ResponseEntity<PokemonDTO> getTranslatedPokemon(@PathVariable String name) {
+        log.info("Received request for translated pokemon: {}", name);
+        PokemonDTO pokemon = pokemonService.getTranslatedPokemonByName(name);
+        return ResponseEntity.ok(pokemon);
+    }
 }
 

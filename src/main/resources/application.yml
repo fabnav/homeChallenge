@@ -11,6 +11,11 @@ pokeapi:
   base:
     url: https://pokeapi.co/api/v2
 
+# FunTranslations API configuration
+funtranslations:
+  base:
+    url: https://api.funtranslations.com
+
 # Logging
 logging:
   level:
