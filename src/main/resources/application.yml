@@ -6,6 +6,11 @@ spring:
   server:
     port: 8080
 
+# PokeAPI configuration
+pokeapi:
+  base:
+    url: https://pokeapi.co/api/v2
+
 # Logging
 logging:
   level:
