@@ -33,23 +33,36 @@ public class PokemonService {
     }
 
     public PokemonDTO getPokemonByName(String name) {
-        log.info("Fetching pokemon data for: {}", name);
+        if (name == null || name.trim().isEmpty()) {
+            throw new IllegalArgumentException("Pokemon name cannot be null or empty");
+        }
         
-        Map<String, Object> response = restClient.get()
-                .uri(POKEMON_SPECIES_PATH, name)
-                .retrieve()
-                .body(Map.class);
-        if(response == null || response.isEmpty()) {
+        log.info("Fetching pokemon data for: {}", name.toLowerCase());
+        
+        try {
+            Map<String, Object> response = restClient.get()
+                    .uri(POKEMON_SPECIES_PATH, name.toLowerCase())
+                    .retrieve()
+                    .body(Map.class);
+            if(response == null || response.isEmpty()) {
+                throw new PokemonNotFoundException(name);
+            }
+            return mapToPokemonDTO(response);
+        } catch (PokemonNotFoundException e) {
+            log.error("Error fetching pokemon data for: {}", name, e);
             throw new PokemonNotFoundException(name);
         }
-        return mapToPokemonDTO(response);
     }
     
     public PokemonDTO getTranslatedPokemonByName(String name) {
+        if (name == null || name.trim().isEmpty()) {
+            throw new IllegalArgumentException("Pokemon name cannot be null or empty");
+        }
+        
         log.info("Fetching translated pokemon data for: {}", name);
         PokemonDTO pokemon = getPokemonByName(name);
         
-        if (pokemon.getDescription() != null && !pokemon.getDescription().isEmpty()) {
+        if (pokemon != null && pokemon.getDescription() != null && !pokemon.getDescription().isEmpty()) {
             String translationType = determineTranslationType(pokemon);
             String translatedDescription = translate(pokemon.getDescription(), translationType);
             pokemon.setDescription(translatedDescription);
@@ -82,10 +95,13 @@ public class PokemonService {
                 Map<String, Object> contents = (Map<String, Object>) response.get("contents");
                 if (contents != null && contents.containsKey("translated")) {
                     String translated = (String) contents.get("translated");
-                    log.info("Translation successful: {}", translated);
-                    return translated;
+                    if (translated != null && !translated.trim().isEmpty()) {
+                        log.info("Translation successful: {}", translated);
+                        return translated;
+                    }
                 }
             }
+            log.warn("Translation response did not contain valid translated text");
         } catch (Exception e) {
             log.warn("Failed to translate text, using original description. Error: {}", e.getMessage());
         }
@@ -96,36 +112,55 @@ public class PokemonService {
     private PokemonDTO mapToPokemonDTO(Map<String, Object> apiResponse) {
         PokemonDTO dto = new PokemonDTO();
         
-        if (apiResponse.get("id") != null) {
-            dto.setId(((Number) apiResponse.get("id")).longValue());
-        }
-        
-        if (apiResponse.get("name") != null) {
-            dto.setName((String) apiResponse.get("name"));
-        }
-        
-        if (apiResponse.get("is_legendary") != null) {
-            dto.setLegendary((Boolean) apiResponse.get("is_legendary"));
-        }
-        
-        Map<String, Object> habitat = (Map<String, Object>) apiResponse.get("habitat");
-        if (habitat != null) {
-            dto.setHabitat((String) habitat.get("name"));
-        }
-        
-        List<Map<String, Object>> flavorTextEntries =
-            (List<Map<String, Object>>) apiResponse.get("flavor_text_entries");
-        
-        if (flavorTextEntries != null && !flavorTextEntries.isEmpty()) {
-            Map<String, Object> firstEntry = flavorTextEntries.stream().filter(f -> {
-                boolean b = f.get("language") != null &&
-                        ((Map<String, Object>) f.get("language")).get("name") != null &&
-                        "en".equalsIgnoreCase(((Map<String, Object>) f.get("language")).get("name").toString());
-                return b;
-            }).findFirst().orElse(null);
-            String flavorText = firstEntry.get("flavor_text").toString();
-            String cleanedDescription = flavorText.replaceAll("[\\n\\f]", " ");
-            dto.setDescription(cleanedDescription);
+        try {
+            if (apiResponse.get("id") != null) {
+                dto.setId(((Number) apiResponse.get("id")).longValue());
+            }
+            
+            if (apiResponse.get("name") != null) {
+                dto.setName((String) apiResponse.get("name"));
+            }
+            
+            if (apiResponse.get("is_legendary") != null) {
+                dto.setLegendary((Boolean) apiResponse.get("is_legendary"));
+            }
+            
+            Map<String, Object> habitat = (Map<String, Object>) apiResponse.get("habitat");
+            if (habitat != null && habitat.get("name") != null) {
+                dto.setHabitat((String) habitat.get("name"));
+            }
+            
+            List<Map<String, Object>> flavorTextEntries =
+                (List<Map<String, Object>>) apiResponse.get("flavor_text_entries");
+            
+            if (flavorTextEntries != null && !flavorTextEntries.isEmpty()) {
+                Map<String, Object> firstEntry = flavorTextEntries.stream()
+                    .filter(f -> {
+                        if (f == null || f.get("language") == null) {
+                            return false;
+                        }
+                        Map<String, Object> language = (Map<String, Object>) f.get("language");
+                        return language.get("name") != null &&
+                               "en".equalsIgnoreCase(language.get("name").toString());
+                    })
+                    .findFirst()
+                    .orElse(null);
+                
+                if (firstEntry != null && firstEntry.get("flavor_text") != null) {
+                    String flavorText = firstEntry.get("flavor_text").toString();
+                    String cleanedDescription = flavorText.replaceAll("[\\n\\f]", " ");
+                    dto.setDescription(cleanedDescription);
+                } else {
+                    log.warn("No English text found for pokemon");
+                    dto.setDescription("");
+                }
+            } else {
+                log.warn("No text entries found for pokemon");
+                dto.setDescription("");
+            }
+        } catch (Exception e) {
+            log.error("Unexpected error mapping Pokemon DTO", e);
+            throw new RuntimeException("Error mapping Pokemon data", e);
         }
         
         log.info("Mapped Pokemon: {}", dto.getName());
