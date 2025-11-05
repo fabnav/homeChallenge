@@ -11,6 +11,10 @@ set-env: ## setup pre-commit hooks
 	@brew install pre-commit
 	@pre-commit install --hook-type commit-msg --hook-type pre-commit
 
+.PHONY: start
+start: ## start the application
+	@mvn spring-boot:run
+
 .PHONY: format
 format: ## format the code as per the spotless configuration
 	@mvn spotless:apply
