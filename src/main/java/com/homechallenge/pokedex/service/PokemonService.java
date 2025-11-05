@@ -1,5 +1,6 @@
 package com.homechallenge.pokedex.service;
 
+import static com.homechallenge.pokedex.util.PokemonUtils.HABITAT_CAVE;
 import static com.homechallenge.pokedex.util.PokemonUtils.POKEMON_SPECIES_PATH;
 import static com.homechallenge.pokedex.util.PokemonUtils.TRANSLATE_PATH;
 import static com.homechallenge.pokedex.util.PokemonUtils.TRANSLATION_TYPE_SHAKESPEARE;
@@ -72,7 +73,7 @@ public class PokemonService {
     }
     
     private String determineTranslationType(PokemonDTO pokemon) {
-        if (pokemon.isLegendary() || "cave".equalsIgnoreCase(pokemon.getHabitat())) {
+        if (pokemon.isLegendary() || HABITAT_CAVE.equalsIgnoreCase(pokemon.getHabitat())) {
             return TRANSLATION_TYPE_YODA;
         }
         return TRANSLATION_TYPE_SHAKESPEARE;
