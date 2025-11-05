@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.homechallenge.pokedex.util.PokemonUtils.HABITAT_CAVE;
 import static com.homechallenge.pokedex.util.PokemonUtils.POKEMON_SPECIES_PATH;
 import static com.homechallenge.pokedex.util.PokemonUtils.TRANSLATE_PATH;
 import static com.homechallenge.pokedex.util.PokemonUtils.TRANSLATION_TYPE_SHAKESPEARE;
@@ -96,6 +97,28 @@ public class PokemonServiceTest {
         // Then
     }
     
+    @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "Pokemon name cannot be null or empty")
+    public void testGetPokemonByName_NullName() {
+        // Given
+        String pokemonName = null;
+        
+        // When
+        pokemonService.getPokemonByName(pokemonName);
+        
+        // Then - Exception is expected
+    }
+    
+    @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "Pokemon name cannot be null or empty")
+    public void testGetPokemonByName_EmptyName() {
+        // Given
+        String pokemonName = "";
+        
+        // When
+        pokemonService.getPokemonByName(pokemonName);
+        
+        // Then - Exception is expected
+    }
+    
     @Test
     public void testGetTranslatedPokemonByName_LegendaryUsesYoda() {
         // Given
@@ -123,7 +146,7 @@ public class PokemonServiceTest {
         String pokemonName = "zubat";
         String description = "Forms colonies in\nperpetually dark\nplaces. Uses\fultrasonic waves\nto identify and\napproach targets.";
         String translatedText = "In dark places,  colonies forms.";
-        PokemonDTO expected = new PokemonDTO(41L, "zubat", description, "cave", false);
+        PokemonDTO expected = new PokemonDTO(41L, "zubat", description, HABITAT_CAVE, false);
         Map<String, Object> apiResponse = createPokemonApiResponse(expected);
         expected.setDescription(translatedText);
         pokeApiHttpRequestHelper.mockGetRequestMap(POKEMON_SPECIES_PATH, pokemonName, apiResponse);
@@ -178,6 +201,115 @@ public class PokemonServiceTest {
         verifyResultAndMocks(result, expected, true);
     }
     
+    @Test(expectedExceptions = PokemonNotFoundException.class, expectedExceptionsMessageRegExp = "Pokemon not found: pikachu")
+    public void testGetPokemonByName_NullResponse() {
+        // Given
+        String pokemonName = "pikachu";
+        pokeApiHttpRequestHelper.mockGetRequestMap(POKEMON_SPECIES_PATH, pokemonName, null);
+        
+        // When
+        pokemonService.getPokemonByName(pokemonName);
+        
+        // Then - Exception is expected
+    }
+    
+    @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "Pokemon name cannot be null or empty")
+    public void testGetTranslatedPokemonByName_NullName() {
+        // Given
+        String pokemonName = null;
+        
+        // When
+        pokemonService.getTranslatedPokemonByName(pokemonName);
+        
+        // Then - Exception is expected
+    }
+    
+    @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "Pokemon name cannot be null or empty")
+    public void testGetTranslatedPokemonByName_EmptyName() {
+        // Given
+        String pokemonName = "";
+        
+        // When
+        pokemonService.getTranslatedPokemonByName(pokemonName);
+        
+        // Then - Exception is expected
+    }
+    
+    @Test
+    public void testGetPokemonByName_MissingTextEntries() {
+        // Given
+        String pokemonName = "missingno";
+        Map<String, Object> apiResponse = new HashMap<>();
+        apiResponse.put("id", 0L);
+        apiResponse.put("name", pokemonName);
+        apiResponse.put("is_legendary", false);
+        Map<String, Object> habitat = new HashMap<>();
+        habitat.put("name", "unknown");
+        apiResponse.put("habitat", habitat);
+        apiResponse.put("flavor_text_entries", List.of());
+        pokeApiHttpRequestHelper.mockGetRequestMap(POKEMON_SPECIES_PATH, pokemonName, apiResponse);
+        
+        // When
+        PokemonDTO result = pokemonService.getPokemonByName(pokemonName);
+        
+        // Then
+        assertNotNull(result);
+        assertEquals(result.getName(), pokemonName);
+        assertEquals(result.getDescription(), "");
+    }
+    
+    @Test
+    public void testGetPokemonByName_NoEnglishText() {
+        // Given
+        String pokemonName = "japanese-only";
+        Map<String, Object> apiResponse = new HashMap<>();
+        apiResponse.put("id", 999L);
+        apiResponse.put("name", pokemonName);
+        apiResponse.put("is_legendary", false);
+        Map<String, Object> habitat = new HashMap<>();
+        habitat.put("name", "urban");
+        apiResponse.put("habitat", habitat);
+        Map<String, Object> flavorTextEntry = new HashMap<>();
+        flavorTextEntry.put("flavor_text", "日本語のテキスト");
+        flavorTextEntry.put("language", Map.of("name", "ja"));
+        apiResponse.put("flavor_text_entries", List.of(flavorTextEntry));
+        pokeApiHttpRequestHelper.mockGetRequestMap(POKEMON_SPECIES_PATH, pokemonName, apiResponse);
+        
+        // When
+        PokemonDTO result = pokemonService.getPokemonByName(pokemonName);
+        
+        // Then
+        assertNotNull(result);
+        assertEquals(result.getName(), pokemonName);
+        assertEquals(result.getDescription(), ""); // Should be empty string
+    }
+    
+    @Test
+    public void testGetPokemonByName_NullHabitat() {
+        // Given
+        String pokemonName = "nohabitat";
+        String description = "A pokemon with no habitat";
+        Map<String, Object> apiResponse = new HashMap<>();
+        apiResponse.put("id", 1000L);
+        apiResponse.put("name", pokemonName);
+        apiResponse.put("is_legendary", false);
+        apiResponse.put("habitat", null);
+        Map<String, Object> flavorTextEntry = new HashMap<>();
+        flavorTextEntry.put("flavor_text", description);
+        flavorTextEntry.put("language", Map.of("name", "en"));
+        apiResponse.put("flavor_text_entries", List.of(flavorTextEntry));
+        pokeApiHttpRequestHelper.mockGetRequestMap(POKEMON_SPECIES_PATH, pokemonName, apiResponse);
+        
+        // When
+        PokemonDTO result = pokemonService.getPokemonByName(pokemonName);
+        
+        // Then
+        assertNotNull(result);
+        assertEquals(result.getName(), pokemonName);
+        assertNull(result.getHabitat());
+        assertEquals(result.getDescription(), description);
+    }
+    
     private Map<String, Object> createPokemonApiResponse(PokemonDTO dto) {
         Map<String, Object> response = new HashMap<>();
         response.put("id", dto.getId());
@@ -212,7 +344,7 @@ public class PokemonServiceTest {
         
         if (verifyTranslation) {
             verify(translationRestClient, times(1)).post();
-            String translationType = (expected.isLegendary() || "cave".equalsIgnoreCase(expected.getHabitat())) ? TRANSLATION_TYPE_YODA : TRANSLATION_TYPE_SHAKESPEARE;
+            String translationType = (expected.isLegendary() || HABITAT_CAVE.equalsIgnoreCase(expected.getHabitat())) ? TRANSLATION_TYPE_YODA : TRANSLATION_TYPE_SHAKESPEARE;
             verify(translationRequestBodyUriSpec, times(1)).uri(eq(TRANSLATE_PATH), eq(translationType));
             verify(translationRequestBodySpec, times(1)).retrieve();
             verify(translationResponseSpec, times(1)).body(eq(Map.class));
