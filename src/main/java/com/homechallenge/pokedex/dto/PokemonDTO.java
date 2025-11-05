@@ -8,14 +8,13 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PokemonDTO {
-    private Long id;
-    
-    private String name;
-    
-    private String description;
-    
-    private String habitat;
-    
-    private boolean isLegendary;
-}
+  private Long id;
 
+  private String name;
+
+  private String description;
+
+  private String habitat;
+
+  private boolean isLegendary;
+}
