@@ -84,6 +84,71 @@ public class PokemonControllerTest {
         // When
         pokemonController.getPokemon(pokemonName);
         
-        // Then - Exception is expected to be thrown
+        // Then
+    }
+    
+    @Test
+    public void testGetTranslatedPokemon_Success() {
+        // Given
+        String pokemonName = "mewtwo";
+        PokemonDTO expectedDto = new PokemonDTO(
+            150L,
+            "mewtwo",
+            "Created by a scientist after years of horrific gene splicing and dna engineering experiments,  it was.",
+            "rare",
+            true
+        );
+        
+        when(pokemonService.getTranslatedPokemonByName(pokemonName)).thenReturn(expectedDto);
+        
+        // When
+        ResponseEntity<PokemonDTO> response = pokemonController.getTranslatedPokemon(pokemonName);
+        
+        // Then
+        assertNotNull(response);
+        assertEquals(response.getStatusCode(), HttpStatus.OK);
+        assertEquals(response.getBody(), expectedDto);
+        assertEquals(response.getBody().getName(), "mewtwo");
+        assertTrue(response.getBody().isLegendary());
+        
+        verify(pokemonService, times(1)).getTranslatedPokemonByName(pokemonName);
+    }
+    
+    @Test
+    public void testGetTranslatedPokemon_DifferentPokemon() {
+        // Given
+        String pokemonName = "pikachu";
+        PokemonDTO expectedDto = new PokemonDTO(
+            25L,
+            "pikachu",
+            "Gather,  several of these pokémon,  their electricity couldst buildeth and cause lightning storms.",
+            "forest",
+            false
+        );
+        
+        when(pokemonService.getTranslatedPokemonByName(pokemonName)).thenReturn(expectedDto);
+        
+        // When
+        ResponseEntity<PokemonDTO> response = pokemonController.getTranslatedPokemon(pokemonName);
+        
+        // Then
+        assertNotNull(response);
+        assertEquals(response.getStatusCode(), HttpStatus.OK);
+        assertEquals(response.getBody().getName(), "pikachu");
+        assertFalse(response.getBody().isLegendary());
+        
+        verify(pokemonService, times(1)).getTranslatedPokemonByName(pokemonName);
+    }
+    
+    @Test(expectedExceptions = PokemonNotFoundException.class, expectedExceptionsMessageRegExp = "Pokemon not found: nonexistent")
+    public void testGetTranslatedPokemon_NotFound() {
+        // Given
+        String pokemonName = "nonexistent";
+        when(pokemonService.getTranslatedPokemonByName(pokemonName)).thenThrow(new PokemonNotFoundException(pokemonName));
+        
+        // When
+        pokemonController.getTranslatedPokemon(pokemonName);
+        
+        // Then
     }
 }
