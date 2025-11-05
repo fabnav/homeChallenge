@@ -6,6 +6,11 @@ SHELL = bash
 help: ## show help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
+.PHONY: setup
+set-env: ## setup pre-commit hooks
+	@brew install pre-commit
+	@pre-commit install --hook-type commit-msg --hook-type pre-commit
+
 .PHONY: format
 format: ## format the code as per the spotless configuration
 	@mvn spotless:apply
