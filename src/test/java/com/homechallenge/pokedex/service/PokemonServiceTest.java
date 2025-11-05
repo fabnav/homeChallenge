@@ -11,6 +11,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.homechallenge.pokedex.util.PokemonUtils.POKEMON_SPECIES_PATH;
+import static com.homechallenge.pokedex.util.PokemonUtils.TRANSLATE_PATH;
+import static com.homechallenge.pokedex.util.PokemonUtils.TRANSLATION_TYPE_SHAKESPEARE;
+import static com.homechallenge.pokedex.util.PokemonUtils.TRANSLATION_TYPE_YODA;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.testng.Assert.*;
@@ -47,10 +51,12 @@ public class PokemonServiceTest {
     public void testGetPokemonByName_Success() {
         // Given
         String pokemonName = "mewtwo";
-        PokemonDTO expected = new PokemonDTO(150L, "mewtwo",
-                "It was created by a scientist after years of horrific gene splicing and DNA engineering experiments.", "rare", true);
+        String description = "It was created by\na scientist after\nyears of horrific\fgene splicing and\nDNA engineering\nexperiments.";
+        String cleanedDescription = "It was created by a scientist after years of horrific gene splicing and DNA engineering experiments.";
+        PokemonDTO expected = new PokemonDTO(150L, "mewtwo", description, "rare", true);
         Map<String, Object> apiResponse = createPokemonApiResponse(expected);
-        pokeApiHttpRequestHelper.mockGetRequestMap("/pokemon-species/{name}", pokemonName, apiResponse);
+        expected.setDescription(cleanedDescription);
+        pokeApiHttpRequestHelper.mockGetRequestMap(POKEMON_SPECIES_PATH, pokemonName, apiResponse);
         
         // When
         PokemonDTO result = pokemonService.getPokemonByName(pokemonName);
@@ -63,10 +69,12 @@ public class PokemonServiceTest {
     public void testGetPokemonByName_Pikachu() {
         // Given
         String pokemonName = "pikachu";
-        PokemonDTO expected = new PokemonDTO(25L, "pikachu",
-                "When several of these Pokémon gather, their electricity could build and cause lightning storms.", "forest", false);
+        String description = "When several of\nthese POKéMON\ngather, their\felectricity could\nbuild and cause\nlightning storms.";
+        String cleanedDescription = "When several of these POKéMON gather, their electricity could build and cause lightning storms.";
+        PokemonDTO expected = new PokemonDTO(25L, "pikachu", description, "forest", false);
         Map<String, Object> apiResponse = createPokemonApiResponse(expected);
-        pokeApiHttpRequestHelper.mockGetRequestMap("/pokemon-species/{name}", pokemonName, apiResponse);
+        expected.setDescription(cleanedDescription);
+        pokeApiHttpRequestHelper.mockGetRequestMap(POKEMON_SPECIES_PATH, pokemonName, apiResponse);
         
         // When
         PokemonDTO result = pokemonService.getPokemonByName(pokemonName);
@@ -80,7 +88,7 @@ public class PokemonServiceTest {
         // Given
         String pokemonName = "nonexistent";
         Map<String, Object> emptyResponse = new HashMap<>();
-        pokeApiHttpRequestHelper.mockGetRequestMap("/pokemon-species/{name}", pokemonName, emptyResponse);
+        pokeApiHttpRequestHelper.mockGetRequestMap(POKEMON_SPECIES_PATH, pokemonName, emptyResponse);
         
         // When
         pokemonService.getPokemonByName(pokemonName);
@@ -92,84 +100,82 @@ public class PokemonServiceTest {
     public void testGetTranslatedPokemonByName_LegendaryUsesYoda() {
         // Given
         String pokemonName = "mewtwo";
-        PokemonDTO pokemon = new PokemonDTO(150L, "mewtwo",
-                "It was created by a scientist.", "rare", true);
-        Map<String, Object> apiResponse = createPokemonApiResponse(pokemon);
-        pokeApiHttpRequestHelper.mockGetRequestMap("/pokemon-species/{name}", pokemonName, apiResponse);
-        
+        String description = "It was created by\na scientist after\nyears of horrific\fgene splicing and\nDNA engineering\nexperiments.";
         String translatedText = "Created by a scientist,  it was.";
-        Map<String, Object> translationResponse = createTranslationResponse(translatedText);
-        translationHttpRequestHelper.mockPostRequestMap("/translate/{type}.json", "yoda", translationResponse);
+        PokemonDTO expected = new PokemonDTO(150L, "mewtwo", description, "rare", true);
+        Map<String, Object> apiResponse = createPokemonApiResponse(expected);
+        expected.setDescription(translatedText);
+        pokeApiHttpRequestHelper.mockGetRequestMap(POKEMON_SPECIES_PATH, pokemonName, apiResponse);
+        
+        Map<String, Object> translationResponse = createTranslationResponse(translatedText, TRANSLATION_TYPE_YODA);
+        translationHttpRequestHelper.mockPostRequestMap(TRANSLATE_PATH, TRANSLATION_TYPE_YODA, translationResponse);
         
         // When
         PokemonDTO result = pokemonService.getTranslatedPokemonByName(pokemonName);
         
         // Then
-        assertNotNull(result);
-        assertEquals(result.getDescription(), translatedText);
-        verify(translationRestClient, times(1)).post();
+        verifyResultAndMocks(result, expected, true);
     }
     
     @Test
     public void testGetTranslatedPokemonByName_CaveHabitatUsesYoda() {
         // Given
         String pokemonName = "zubat";
-        PokemonDTO pokemon = new PokemonDTO(41L, "zubat",
-                "Forms colonies in dark places.", "cave", false);
-        Map<String, Object> apiResponse = createPokemonApiResponse(pokemon);
-        pokeApiHttpRequestHelper.mockGetRequestMap("/pokemon-species/{name}", pokemonName, apiResponse);
-        
+        String description = "Forms colonies in\nperpetually dark\nplaces. Uses\fultrasonic waves\nto identify and\napproach targets.";
         String translatedText = "In dark places,  colonies forms.";
-        Map<String, Object> translationResponse = createTranslationResponse(translatedText);
-        translationHttpRequestHelper.mockPostRequestMap("/translate/{type}.json", "yoda", translationResponse);
+        PokemonDTO expected = new PokemonDTO(41L, "zubat", description, "cave", false);
+        Map<String, Object> apiResponse = createPokemonApiResponse(expected);
+        expected.setDescription(translatedText);
+        pokeApiHttpRequestHelper.mockGetRequestMap(POKEMON_SPECIES_PATH, pokemonName, apiResponse);
+        
+        Map<String, Object> translationResponse = createTranslationResponse(translatedText, TRANSLATION_TYPE_YODA);
+        translationHttpRequestHelper.mockPostRequestMap(TRANSLATE_PATH, TRANSLATION_TYPE_YODA, translationResponse);
         
         // When
         PokemonDTO result = pokemonService.getTranslatedPokemonByName(pokemonName);
         
         // Then
-        assertNotNull(result);
-        assertEquals(result.getDescription(), translatedText);
-        verify(translationRestClient, times(1)).post();
+        verifyResultAndMocks(result, expected, true);
     }
     
     @Test
     public void testGetTranslatedPokemonByName_OtherUsesShakespeare() {
         // Given
         String pokemonName = "pikachu";
-        PokemonDTO pokemon = new PokemonDTO(25L, "pikachu",
-                "It stores electricity in its cheeks.", "forest", false);
-        Map<String, Object> apiResponse = createPokemonApiResponse(pokemon);
-        pokeApiHttpRequestHelper.mockGetRequestMap("/pokemon-species/{name}", pokemonName, apiResponse);
-        
+        String description = "When several of\nthese POKéMON\ngather, their\felectricity could\nbuild and cause\nlightning storms.";
         String translatedText = "'t stores electricity in its cheeks.";
-        Map<String, Object> translationResponse = createTranslationResponse(translatedText);
-        translationHttpRequestHelper.mockPostRequestMap("/translate/{type}.json", "shakespeare", translationResponse);
+        PokemonDTO expected = new PokemonDTO(25L, "pikachu", description, "forest", false);
+        Map<String, Object> apiResponse = createPokemonApiResponse(expected);
+        expected.setDescription(translatedText);
+        pokeApiHttpRequestHelper.mockGetRequestMap(POKEMON_SPECIES_PATH, pokemonName, apiResponse);
+        
+        Map<String, Object> translationResponse = createTranslationResponse(translatedText, TRANSLATION_TYPE_SHAKESPEARE);
+        translationHttpRequestHelper.mockPostRequestMap(TRANSLATE_PATH, TRANSLATION_TYPE_SHAKESPEARE, translationResponse);
         
         // When
         PokemonDTO result = pokemonService.getTranslatedPokemonByName(pokemonName);
         
         // Then
-        assertNotNull(result);
-        assertEquals(result.getDescription(), translatedText);
-        verify(translationRestClient, times(1)).post();
+        verifyResultAndMocks(result, expected, true);
     }
     
     @Test
     public void testGetTranslatedPokemonByName_TranslationFails_ReturnsOriginal() {
         // Given
         String pokemonName = "pikachu";
-        String originalDescription = "It stores electricity in its cheeks.";
-        PokemonDTO pokemon = new PokemonDTO(25L, "pikachu", originalDescription, "forest", false);
-        Map<String, Object> apiResponse = createPokemonApiResponse(pokemon);
-        pokeApiHttpRequestHelper.mockGetRequestMap("/pokemon-species/{name}", pokemonName, apiResponse);
-        translationHttpRequestHelper.mockPostRequestMap("/translate/{type}.json", "shakespeare", new HashMap<>());
+        String originalDescription = "When several of\nthese POKéMON\ngather, their\felectricity could\nbuild and cause\nlightning storms.";
+        String cleanedDescription = "When several of these POKéMON gather, their electricity could build and cause lightning storms.";
+        PokemonDTO expected = new PokemonDTO(25L, "pikachu", originalDescription, "forest", false);
+        Map<String, Object> apiResponse = createPokemonApiResponse(expected);
+        expected.setDescription(cleanedDescription);
+        pokeApiHttpRequestHelper.mockGetRequestMap(POKEMON_SPECIES_PATH, pokemonName, apiResponse);
+        translationHttpRequestHelper.mockPostRequestMap(TRANSLATE_PATH, TRANSLATION_TYPE_SHAKESPEARE, new HashMap<>());
         
         // When
         PokemonDTO result = pokemonService.getTranslatedPokemonByName(pokemonName);
         
         // Then
-        assertNotNull(result);
-        assertEquals(result.getDescription(), originalDescription);
+        verifyResultAndMocks(result, expected, true);
     }
     
     private Map<String, Object> createPokemonApiResponse(PokemonDTO dto) {
@@ -184,6 +190,7 @@ public class PokemonServiceTest {
         
         Map<String, Object> flavorTextEntry = new HashMap<>();
         flavorTextEntry.put("flavor_text", dto.getDescription());
+        flavorTextEntry.put("language", Map.of("name", "en"));
         
         response.put("flavor_text_entries", List.of(flavorTextEntry));
         
@@ -191,20 +198,32 @@ public class PokemonServiceTest {
     }
     
     private void verifyResultAndMocks(PokemonDTO result, PokemonDTO expected) {
+        verifyResultAndMocks(result, expected, false);
+    }
+    
+    private void verifyResultAndMocks(PokemonDTO result, PokemonDTO expected, boolean verifyTranslation) {
         assertNotNull(result);
         assertEquals(result, expected);
         
         verify(pokeApiRestClient, times(1)).get();
-        verify(pokeApiRequestHeadersUriSpec, times(1)).uri(eq("/pokemon-species/{name}"), eq(result.getName()));
+        verify(pokeApiRequestHeadersUriSpec, times(1)).uri(eq(POKEMON_SPECIES_PATH), eq(result.getName()));
         verify(pokeApiRequestHeadersUriSpec, times(1)).retrieve();
         verify(pokeApiResponseSpec, times(1)).body(eq(Map.class));
+        
+        if (verifyTranslation) {
+            verify(translationRestClient, times(1)).post();
+            String translationType = (expected.isLegendary() || "cave".equalsIgnoreCase(expected.getHabitat())) ? TRANSLATION_TYPE_YODA : TRANSLATION_TYPE_SHAKESPEARE;
+            verify(translationRequestBodyUriSpec, times(1)).uri(eq(TRANSLATE_PATH), eq(translationType));
+            verify(translationRequestBodySpec, times(1)).retrieve();
+            verify(translationResponseSpec, times(1)).body(eq(Map.class));
+        }
     }
     
-    private Map<String, Object> createTranslationResponse(String translatedText) {
+    private Map<String, Object> createTranslationResponse(String translatedText, String type) {
         Map<String, Object> contents = new HashMap<>();
         contents.put("translated", translatedText);
         contents.put("text", "original text");
-        contents.put("translation", "yoda");
+        contents.put("translation", type);
         
         Map<String, Object> response = new HashMap<>();
         response.put("contents", contents);

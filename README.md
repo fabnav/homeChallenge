@@ -61,10 +61,10 @@ The application will be available at `http://localhost:8080`
 ### Pokemon API
 ```bash
 # Get Pokemon information by name
-GET http://localhost:8080/api/pokemon/{pokemonName}
+GET http://localhost:8080/pokemon/{pokemonName}
 
 # Get Pokemon information with translated description
-GET http://localhost:8080/api/pokemon/translated/{pokemonName}
+GET http://localhost:8080/pokemon/translated/{pokemonName}
 ```
 
 ### Response Example

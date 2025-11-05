@@ -1,5 +1,10 @@
 package com.homechallenge.pokedex.service;
 
+import static com.homechallenge.pokedex.util.PokemonUtils.POKEMON_SPECIES_PATH;
+import static com.homechallenge.pokedex.util.PokemonUtils.TRANSLATE_PATH;
+import static com.homechallenge.pokedex.util.PokemonUtils.TRANSLATION_TYPE_SHAKESPEARE;
+import static com.homechallenge.pokedex.util.PokemonUtils.TRANSLATION_TYPE_YODA;
+
 import com.homechallenge.pokedex.dto.PokemonDTO;
 import com.homechallenge.pokedex.exception.PokemonNotFoundException;
 import lombok.extern.slf4j.Slf4j;
@@ -31,7 +36,7 @@ public class PokemonService {
         log.info("Fetching pokemon data for: {}", name);
         
         Map<String, Object> response = restClient.get()
-                .uri("/pokemon-species/{name}", name)
+                .uri(POKEMON_SPECIES_PATH, name)
                 .retrieve()
                 .body(Map.class);
         if(response == null || response.isEmpty()) {
@@ -55,9 +60,9 @@ public class PokemonService {
     
     private String determineTranslationType(PokemonDTO pokemon) {
         if (pokemon.isLegendary() || "cave".equalsIgnoreCase(pokemon.getHabitat())) {
-            return "yoda";
+            return TRANSLATION_TYPE_YODA;
         }
-        return "shakespeare";
+        return TRANSLATION_TYPE_SHAKESPEARE;
     }
     
     private String translate(String text, String translationType) {
@@ -68,7 +73,7 @@ public class PokemonService {
             formData.add("text", text);
             
             Map<String, Object> response = translationRestClient.post()
-                    .uri("/translate/{type}.json", translationType)
+                    .uri(TRANSLATE_PATH, translationType)
                     .body(formData)
                     .retrieve()
                     .body(Map.class);
@@ -112,10 +117,14 @@ public class PokemonService {
             (List<Map<String, Object>>) apiResponse.get("flavor_text_entries");
         
         if (flavorTextEntries != null && !flavorTextEntries.isEmpty()) {
-            Map<String, Object> firstEntry = flavorTextEntries.stream().findFirst().orElse(null);
+            Map<String, Object> firstEntry = flavorTextEntries.stream().filter(f -> {
+                boolean b = f.get("language") != null &&
+                        ((Map<String, Object>) f.get("language")).get("name") != null &&
+                        "en".equalsIgnoreCase(((Map<String, Object>) f.get("language")).get("name").toString());
+                return b;
+            }).findFirst().orElse(null);
             String flavorText = firstEntry.get("flavor_text").toString();
-            // Remove \n and \f characters from the description
-            String cleanedDescription = flavorText.replace("\n", " ").replace("\f", " ");
+            String cleanedDescription = flavorText.replaceAll("[\\n\\f]", " ");
             dto.setDescription(cleanedDescription);
         }
         
