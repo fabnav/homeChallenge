@@ -3,54 +3,6 @@
 ## 📋 Description
 A RESTful Pokédex API built with Spring Boot that provides information about Pokemon, including their descriptions, habitats, and legendary status. The application integrates with external Pokemon APIs to fetch and transform Pokemon data, with optional fun translations (Yoda or Shakespeare style).
 
-## 🏗️ Design Decisions
-
-### Architecture
-- clear separation between Controller, Service, and DTO layers
-- used `RestClient` for cleaner, more maintainable HTTP calls
-- `AppConfig` bean for all external service URLs
-- `PokemonNotFoundException` with proper HTTP status codes
-- `PokemonUtils` for description extraction and cleaning logic
-
-### Code Quality
-- DTOs use records for immutability and clarity
-- null-safe operations with proper fallbacks
-- structured logging for debugging and monitoring
-- separate configurations for dev/prod environments
-
-### Testing Strategy
-- Service layer and Controller tests with mocked dependencies
-- Custom test helper for centralizing and simulating external API responses
-- Tests for not-found scenarios, null handling, and translation fallbacks
-
-### What I'd Add for Production
-
-#### **Resilience & Reliability**
-- ensure the application can handle failures, especially when dealing with external APIs.
-- implement exponential backoff and circuit breakers.
-- consider a proper timeout strategy.
-- respect the rate limits of the free API.
-
-#### **Caching**
-- caching would improve performance and reduce external API calls, given that Pokemon data is relatively static.
-- setup different TTLs between normal and translated requests.
-
-#### **Observability**
-- Prometheus + Grafana for monitoring
-
-#### **Security**
-- JWT tokens for API authentication
-- enhanced input validation
-- CORS policies for frontend integration
-
-#### **Operational Excellence**
-- helm charts for K8s orchestration
-- GitHub Actions/GitLab CI for automated testing and deployment
-- Terraform/CloudFormation for infrastructure as code
-
-#### **API Documentation**
-- OpenAPI/Swagger documentation
-
 ## 🚀 Getting Started
 
 ### Prerequisites
@@ -150,6 +102,54 @@ curl http://localhost:8080/pokemon/translated/mewtwo
 - 🧙 **Yoda translation**: For legendary Pokemon or cave habitat
 - 🎭 **Shakespeare translation**: For all other Pokemon
 - If translation fails, returns original description
+
+## 🏗️ Design Decisions
+
+### Architecture
+- clear separation between Controller, Service, and DTO layers
+- used `RestClient` for cleaner, more maintainable HTTP calls
+- `AppConfig` bean for all external service URLs
+- `PokemonNotFoundException` with proper HTTP status codes
+- `PokemonUtils` for description extraction and cleaning logic
+
+### Code Quality
+- DTOs use records for immutability and clarity
+- null-safe operations with proper fallbacks
+- structured logging for debugging and monitoring
+- separate configurations for dev/prod environments
+
+### Testing Strategy
+- Service layer and Controller tests with mocked dependencies
+- Custom test helper for centralizing and simulating external API responses
+- Tests for not-found scenarios, null handling, and translation fallbacks
+
+### What I'd Add for Production
+
+#### **Resilience & Reliability**
+- ensure the application can handle failures, especially when dealing with external APIs.
+- implement exponential backoff and circuit breakers.
+- consider a proper timeout strategy.
+- respect the rate limits of the free API.
+
+#### **Caching**
+- caching would improve performance and reduce external API calls, given that Pokemon data is relatively static.
+- setup different TTLs between normal and translated requests.
+
+#### **Observability**
+- Prometheus + Grafana for monitoring
+
+#### **Security**
+- JWT tokens for API authentication
+- enhanced input validation
+- CORS policies for frontend integration
+
+#### **Operational Excellence**
+- helm charts for K8s orchestration
+- GitHub Actions/GitLab CI for automated testing and deployment
+- Terraform/CloudFormation for infrastructure as code
+
+#### **API Documentation**
+- OpenAPI/Swagger documentation
 
 ## 📝 Configuration
 
